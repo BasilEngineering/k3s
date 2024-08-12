@@ -37,7 +37,7 @@ import (
 	_ "github.com/flannel-io/flannel/pkg/backend/hostgw"
 	_ "github.com/flannel-io/flannel/pkg/backend/ipsec"
 	_ "github.com/flannel-io/flannel/pkg/backend/vxlan"
-	_ "github.com/flannel-io/flannel/pkg/backend/wireguard"
+	"github.com/k3s-io/k3s/pkg/agent/flannel/wireguard"
 )
 
 const (
@@ -55,7 +55,7 @@ func flannel(ctx context.Context, flannelIface *net.Interface, flannelConf, kube
 	if err != nil {
 		return errors.Wrap(err, "failed to find the interface")
 	}
-
+	wireguard.KubeConfig = kubeConfigFile
 	sm, err := kube.NewSubnetManager(ctx,
 		"",
 		kubeConfigFile,
@@ -263,7 +263,6 @@ func ReadCIDRsFromSubnetFile(path string, CIDRKey string) []ip.IP4Net {
 	}
 	return prevCIDRs
 }
-
 
 // ReadIP6CIDRFromSubnetFile reads the flannel subnet file and extracts the value of IPv6 network CIDRKey
 func ReadIP6CIDRFromSubnetFile(path string, CIDRKey string) ip.IP6Net {
