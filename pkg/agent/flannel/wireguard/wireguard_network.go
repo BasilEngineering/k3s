@@ -205,6 +205,21 @@ func (n *network) handleSubnetEvents(ctx context.Context, batch []lease.Event) {
 						}
 						if isNodeCloud(current) && isNodeCloud(target) {
 							// use internal ip as endpoint
+							cidr := "100.64.0.0/10"
+							_, block, _ := net.ParseCIDR(cidr)
+							if block.Contains(event.Lease.Attrs.PublicIP.ToIP()) {
+								publicEndpoint = ""
+								for _, a := range target.Status.Addresses {
+									if x := addressToIpNet4(a); x != nil {
+										if block.Contains(x.IP) {
+											continue
+										}
+										if a.Type == v1.NodeInternalIP || a.Type == v1.NodeExternalIP {
+											publicEndpoint = fmt.Sprintf("%s:%d", a.Address, n.dev.attrs.listenPort)
+										}
+									}
+								}
+							}
 							log.Infof("Subnet %v: TODO: use internal ip [%s] as peer endpoint", event.Lease.Subnet, internalAddressOf(target))
 						}
 						if isNodeEdge(current) && isNodeCloud(target) {
