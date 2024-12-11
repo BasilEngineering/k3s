@@ -280,7 +280,7 @@ func (dev *wgDevice) addPeer(publicEndpoint string, peerPublicKeyRaw string, pee
 			return fmt.Errorf("failed to resolve UDP address: %w", err)
 		}
 	}
-	log.Infof("Add Peer %v via %v", peerSubnets, publicEndpoint)
+	log.Infof("Add Peer '%v' via '%v', udp-endpoint %v", peerSubnets, publicEndpoint, udpEndpoint)
 	peerPublicKey, err := wgtypes.ParseKey(peerPublicKeyRaw)
 	if err != nil {
 		return fmt.Errorf("failed to parse publicKey: %w", err)

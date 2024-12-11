@@ -147,6 +147,7 @@ func (n *network) handleSubnetEvents(ctx context.Context, batch []lease.Event) {
 		target := selectNodeByEvent(nodes, &event)
 		current := selectNodeByName(nodes, n.kube.nodeName)
 		log.Infof("handleSubnetEvents: %v nodes = %v", event.Lease.Subnet, len(nodes))
+		_, cursedBlock, _ := net.ParseCIDR("100.64.0.0/10")
 		switch event.Type {
 		case lease.EventAdded:
 
@@ -198,20 +199,16 @@ func (n *network) handleSubnetEvents(ctx context.Context, batch []lease.Event) {
 									}
 								}
 							}
-						}
-						if isNodeEdge(current) && isNodeEdge(target) {
+						} else if isNodeEdge(current) && isNodeEdge(target) {
 							// TODO add this one of cloud nodes
 							continue
-						}
-						if isNodeCloud(current) && isNodeCloud(target) {
+						} else if isNodeCloud(current) && isNodeCloud(target) {
 							// use internal ip as endpoint
-							cidr := "100.64.0.0/10"
-							_, block, _ := net.ParseCIDR(cidr)
-							if block.Contains(event.Lease.Attrs.PublicIP.ToIP()) {
+							if cursedBlock.Contains(event.Lease.Attrs.PublicIP.ToIP()) {
 								publicEndpoint = ""
 								for _, a := range target.Status.Addresses {
 									if x := addressToIpNet4(a); x != nil {
-										if block.Contains(x.IP) {
+										if cursedBlock.Contains(x.IP) {
 											continue
 										}
 										if a.Type == v1.NodeInternalIP || a.Type == v1.NodeExternalIP {
@@ -221,10 +218,23 @@ func (n *network) handleSubnetEvents(ctx context.Context, batch []lease.Event) {
 								}
 							}
 							log.Infof("Subnet %v: TODO: use internal ip [%s] as peer endpoint", event.Lease.Subnet, internalAddressOf(target))
-						}
-						if isNodeEdge(current) && isNodeCloud(target) {
+						} else if isNodeEdge(current) && isNodeCloud(target) {
 							// use external ip as endpoint
 							log.Infof("Subnet %v: TODO: use external ip [%s] as remote peer endpoint", event.Lease.Subnet, externalAddressOf(target))
+							if cursedBlock.Contains(event.Lease.Attrs.PublicIP.ToIP()) {
+								continue
+							}
+							for _, a := range target.Status.Addresses {
+								if a.Type == v1.NodeInternalIP {
+									if x := addressToIpNet4(a); x != nil {
+										if cursedBlock.Contains(x.IP) {
+											continue
+										}
+										subs = append(subs, *x)
+										addRouteTo = append(addRouteTo, x)
+									}
+								}
+							}
 						}
 					}
 					if err := n.dev.addPeer(

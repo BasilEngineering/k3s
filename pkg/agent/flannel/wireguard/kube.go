@@ -109,6 +109,7 @@ func isNodeCloud(node *corev1.Node) bool {
 	a2 := node.Labels["basil.com.tr/edge"]
 	return a1 == "false" || a2 == "false"
 }
+
 func addressToIpNet(a corev1.NodeAddress) *net.IPNet {
 	ip := net.ParseIP(a.Address)
 	if len(ip) == net.IPv4len {
